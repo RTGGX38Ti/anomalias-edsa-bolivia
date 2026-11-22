@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detección de Anomalías Biométricas Bolivia (EDSA 2016 vs 2023) | DAT-253</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            16: '#2563EB', // EDSA 2016 Blue
+                            23: '#DC2626', // EDSA 2023 Crimson
+                            consensus: '#059669', // Emerald Consensus
+                            dark: '#0F172A',
+                            slate: '#64748B'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #F1F5F9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+        
+        @media print {
+            .no-print { display: none !important; }
+            .print-full { width: 100% !important; margin: 0 !important; padding: 0 !important; }
+            .tab-content { display: block !important; page-break-after: always; }
+            body { background: #ffffff !important; color: #000000 !important; }
+            .shadow-sm, .shadow-md, .shadow-lg { box-shadow: none !important; border: 1px solid #E2E8F0 !important; }
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col bg-slate-50 text-slate-800 antialiased overflow-x-hidden">
+
+    <!-- HEADER SUPERIOR ACADÉMICO / EJECUTIVO -->
+    <header class="bg-slate-900 text-white sticky top-0 z-40 shadow-md no-print border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-blue-600 rounded-lg text-white">
+                    <i data-lucide="activity" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-base sm:text-lg font-bold leading-tight tracking-tight text-white flex items-center gap-2">
+                        Minería de Datos Biométrica
+                        <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">DAT-253</span>
+                    </h1>
+                    <p class="text-xs text-slate-400 hidden sm:block">Detección de Anomalías Multivariadas en Bolivia (EDSA 2016 vs 2023) • GMM, LOF & Mahalanobis</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <div class="hidden lg:flex flex-col text-right text-xs border-r border-slate-700 pr-4">
+                    <span class="font-medium text-slate-200">Docente: Lic. Menfy Morales Rios</span>
+                    <span class="text-slate-400">Carrera de Informática - UMSA</span>
+                </div>
+                <button onclick="window.print()" class="flex items-center space-x-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg border border-slate-700 transition">
+                    <i data-lucide="printer" class="w-4 h-4 text-blue-400"></i>
+                    <span class="hidden sm:inline">Exportar Reporte / PDF</span>
+                </button>
+                <button id="mobile-menu-btn" class="md:hidden p-2 rounded-lg hover:bg-slate-800 text-slate-300">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ESTRUCTURA PRINCIPAL (SIDEBAR + CONTENIDO) -->
+    <div class="flex-1 flex max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 gap-6">
+
+        <!-- SIDEBAR DE NAVEGACIÓN -->
+        <aside id="sidebar" class="hidden md:flex flex-col w-64 flex-shrink-0 space-y-1 no-print">
+            <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm mb-4">
+                <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Resumen Ejecutivo</div>
+                <div class="text-sm font-semibold text-slate-700">Comparativa Longitudinal</div>
+                <div class="text-xs text-slate-500 mt-1">EDSA 2016 (n=4,309) vs EDSA 2023 (n=5,349)</div>
+            </div>
+
+            <nav class="space-y-1" id="tab-nav">
+                <button onclick="switchTab('resumen')" id="nav-resumen" class="tab-btn active w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-lg text-xs font-semibold transition bg-blue-50 text-blue-700 border border-blue-200">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                    <span>Resumen & Hallazgos</span>
+                </button>
+                <button onclick="switchTab('datos')" id="nav-datos" class="tab-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition">
+                    <i data-lucide="database" class="w-4 h-4"></i>
+                    <span>Datos y Limpieza</span>
+                </button>
+                <button onclick="switchTab('modelos')" id="nav-modelos" class="tab-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition">
+                    <i data-lucide="cpu" class="w-4 h-4"></i>
+                    <span>Modelos & Comparativas</span>
+                </button>
+                <button onclick="switchTab('contexto')" id="nav-contexto" class="tab-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition">
+                    <i data-lucide="map-pin" class="w-4 h-4"></i>
+                    <span>Cruce Contextual & Auditoría</span>
+                </button>
+                <button onclick="switchTab('bitacora')" id="nav-bitacora" class="tab-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition">
+                    <i data-lucide="file-code-2" class="w-4 h-4"></i>
+                    <span>Bitácora Técnica (Scripts R)</span>
+                </button>
+                <button onclick="switchTab('timeline')" id="nav-timeline" class="tab-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition">
+                    <i data-lucide="history" class="w-4 h-4"></i>
+                    <span>Línea de Tiempo</span>
+                </button>
+            </nav>
+
+            <div class="bg-slate-900 text-slate-300 rounded-xl p-4 mt-auto text-xs space-y-2 border border-slate-800">
+                <div class="flex items-center space-x-2 text-emerald-400 font-semibold">
+                    <i data-lucide="shield-check" class="w-4 h-4"></i>
+                    <span>Consenso Tricomponente</span>
+                </div>
+                <p class="text-[11px] leading-relaxed text-slate-400">
+                    GMM + LOF + Distancia de Mahalanobis en sinergia para descartar falsos positivos biológicos.
+                </p>
+            </div>
+        </aside>
+
+        <!-- ÁREA DE CONTENIDO PRINCIPAL -->
+        <main class="flex-1 min-w-0 print-full space-y-6">
+
+            <!-- TAB 1: RESUMEN Y HALLAZGOS -->
+            <section id="tab-resumen" class="tab-content space-y-6">
+                
+                <!-- CARDS DE METRICAS PRINCIPALES (KPIS) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-16 h-16 bg-blue-500/10 rounded-bl-full flex items-top justify-end p-3">
+                            <i data-lucide="users" class="w-5 h-5 text-blue-600"></i>
+                        </div>
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Muestra Analizada</span>
+                        <div class="text-2xl font-extrabold text-slate-900 mt-1">9,658</div>
+                        <div class="text-xs text-slate-500 mt-2 flex items-center gap-1.5">
+                            <span class="inline-block w-2 h-2 rounded-full bg-blue-600"></span> 2016: 4,309
+                            <span class="inline-block w-2 h-2 rounded-full bg-red-600 ml-2"></span> 2023: 5,349
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-16 h-16 bg-emerald-500/10 rounded-bl-full flex items-top justify-end p-3">
+                            <i data-lucide="alert-triangle" class="w-5 h-5 text-emerald-600"></i>
+                        </div>
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Consenso 3/3 (Anomalías)</span>
+                        <div class="text-2xl font-extrabold text-emerald-600 mt-1">142 casos</div>
+                        <div class="text-xs text-slate-500 mt-2 flex items-center justify-between">
+                            <span>2016: 60 (1.39%)</span>
+                            <span>2023: 82 (1.53%)</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-16 h-16 bg-indigo-500/10 rounded-bl-full flex items-top justify-end p-3">
+                            <i data-lucide="git-merge" class="w-4 h-4 text-indigo-600"></i>
+                        </div>
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Concordancia GMM ∩ LOF</span>
+                        <div class="text-2xl font-extrabold text-slate-900 mt-1">93.8%</div>
+                        <div class="text-xs text-slate-500 mt-2">
+                            2016: 92.9% • 2023: 94.6% coincidencia
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-16 h-16 bg-amber-500/10 rounded-bl-full flex items-top justify-end p-3">
+                            <i data-lucide="scale" class="w-5 h-5 text-amber-600"></i>
+                        </div>
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">IMC Promedio Consenso</span>
+                        <div class="text-2xl font-extrabold text-slate-900 mt-1">31.4 kg/m²</div>
+                        <div class="text-xs text-slate-500 mt-2">
+                            vs. ~26.8 kg/m² en la población normal
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4 HALLAZGOS CLAVE EXPLICADOS CON RIGOR -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2 bg-blue-100 text-blue-700 rounded-lg">
+                                <i data-lucide="mountain" class="w-5 h-5"></i>
+                            </div>
+                            <h3 class="font-bold text-slate-900 text-sm">1. Anomalías Contextuales en Forma de "U" por Altitud</h3>
+                        </div>
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            Se detectó que el Altiplano (&gt;3,000 msnm) y los Llanos (&lt;1,500 msnm) registran tasas de anomalías significativamente mayores que los Valles (1,500–3,000 msnm). En el Altiplano, la hemoglobina alcanza niveles medios de 15.0 g/dL (2016) y 14.3 g/dL (2023), generando casos de poliglobulia fisiológica que los modelos de distancia global marcan como atípicos si no se ajusta el contexto.
+                        </p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2 bg-red-100 text-red-700 rounded-lg">
+                                <i data-lucide="baby" class="w-5 h-5"></i>
+                            </div>
+                            <h3 class="font-bold text-slate-900 text-sm">2. Impacto Fisiológico del Estado de Embarazo</h3>
+                        </div>
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            Las mujeres gestantes presentan una tasa de anomalía GMM que se eleva dramáticamente al 7.29% en 2016 y al 11.43% en 2023 (frente al ~4.8% en no embarazadas). Esto responde a la alteración simultánea de ganancia ponderal rápida y hemodilución fisiológica (caída de hemoglobina), validando que las anomalías biométricas incluyen estados fisiológicos severos.
+                        </p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2 bg-amber-100 text-amber-700 rounded-lg">
+                                <i data-lucide="trending-up" class="w-5 h-5"></i>
+                            </div>
+                            <h3 class="font-bold text-slate-900 text-sm">3. Desplazamiento Poblacional Biométrico (2016 vs 2023)</h3>
+                        </div>
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            El análisis comparativo de densidad revela una cola derecha más pronunciada en la variable Peso en 2023 (llegando a registrarse un caso extremo de 169 kg y un IMC de 71.1 kg/m²). Paralelamente, se observa un descenso leve en la curva de hemoglobina general en 2023, reflejando transiciones nutricionales y epidemiológicas a nivel poblacional.
+                        </p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2 bg-emerald-100 text-emerald-700 rounded-lg">
+                                <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+                            </div>
+                            <h3 class="font-bold text-slate-900 text-sm">4. Estabilidad del Parámetro k en LOF</h3>
+                        </div>
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            La curva de sensibilidad para el algoritmo LOF demostró que a partir de k = 20 vecinos (minPts), el porcentaje de anomalías clasificadas se estabiliza de manera uniforme (1.62% en 2016 y 1.74% en 2023). Esto proporciona sustento técnico sólido a la parametrización utilizada y soluciona la limitación de sensibilidad local.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- GRÁFICO COMPARATIVO DE MODELOS -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-base">Tasa de Anomalías Detectadas por Modelo (%)</h3>
+                            <p class="text-xs text-slate-500">Comparativa directa EDSA 2016 vs EDSA 2023</p>
+                        </div>
+                        <span class="text-xs font-semibold px-2.5 py-1 bg-slate-100 text-slate-600 rounded-full border border-slate-200">Umbrales: GMM 5% | LOF > 1.5 | Mahal Chi² 95%</span>
+                    </div>
+                    <div class="h-72 w-full">
+                        <canvas id="chartComparisonOverview"></canvas>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- TAB 2: DATOS Y LIMPIEZA -->
+            <section id="tab-datos" class="tab-content hidden space-y-6">
+                
+                <!-- SECCIÓN ¿QUÉ DATOS Y POR QUÉ? -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex items-center space-x-3 border-b border-slate-100 pb-3">
+                        <i data-lucide="database" class="w-6 h-6 text-blue-600"></i>
+                        <div>
+                            <h2 class="text-base font-bold text-slate-900">Origen de los Datos y Justificación Metodológica</h2>
+                            <p class="text-xs text-slate-500">Instituto Nacional de Estadística (INE) Bolivia • Catálogo ANDA</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-slate-600 leading-relaxed">
+                        <div class="space-y-2 bg-slate-50 p-4 rounded-lg border border-slate-200">
+                            <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                <i data-lucide="file-check" class="w-4 h-4 text-emerald-600"></i>
+                                Archivos Seleccionados (`Peso_talla_hemo`)
+                            </h4>
+                            <p>
+                                Se seleccionaron de manera exclusiva los archivos <code class="bg-slate-200 text-slate-800 px-1 py-0.5 rounded">EDSA16_PESO_TALLA_HEMOGLOBINA.sav</code> y <code class="bg-slate-200 text-slate-800 px-1 py-0.5 rounded">EDSA2023_Peso_talla_hemo.sav</code>. Estos módulos concentran las variables biométricas antropométricas y hematológicas medidas objetivamente por personal de salud capacitado mediante balanzas, infantómetros/tallímetros y hemoglobinómetros digitales.
+                            </p>
+                        </div>
+
+                        <div class="space-y-2 bg-slate-50 p-4 rounded-lg border border-slate-200">
+                            <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                <i data-lucide="file-x" class="w-4 h-4 text-red-600"></i>
+                                Módulos Descartados y Razón de Exclusión
+                            </h4>
+                            <p>
+                                Se descartaron explícitamente los módulos de <em>Vivienda, Hogar, Mujer (Cuestionario Individual) y Calendario</em>. La razón técnica fue evitar variables puramente cualitativas o categóricas auto-reportadas (ej. nivel educativo, enseres del hogar) que distorsionan las matrices de covarianza y las métricas de distancia euclidiana requeridas por GMM y LOF.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800 flex items-center space-x-3">
+                        <i data-lucide="info" class="w-5 h-5 text-blue-600 flex-shrink-0"></i>
+                        <span><strong>Control de Sesgo Demográfico:</strong> En 2016 se analizaron mujeres de 14 a 49 años y en 2023 mujeres de 12 a 49 años. Este filtro garantiza una población objetivo biológicamente comparable y homogénea.</span>
+                    </div>
+                </div>
+
+                <!-- TABLA COMPARATIVA DE VARIABLES -->
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="p-4 bg-slate-50 border-b border-slate-200 font-bold text-sm text-slate-800">
+                        Estructura de Variables Utilizadas por Año (EDSA 2016 vs 2023)
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                                    <th class="p-3">Dimensión</th>
+                                    <th class="p-3">Variable R</th>
+                                    <th class="p-3">Código SPSS 2016</th>
+                                    <th class="p-3">Código SPSS 2023</th>
+                                    <th class="p-3">Rango Biológico Filtro</th>
+                                    <th class="p-3">Rol en el Análisis</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-200 text-slate-600">
+                                <tr>
+                                    <td class="p-3 font-semibold text-slate-800">Biométrica</td>
+                                    <td class="p-3 font-mono text-blue-600">Peso</td>
+                                    <td class="p-3 font-mono">hs06_0082</td>
+                                    <td class="p-3 font-mono">hs05_0095</td>
+                                    <td class="p-3">20.0 kg – 200.0 kg</td>
+                                    <td class="p-3"><span class="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-medium">Modelo Principal</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-semibold text-slate-800">Biométrica</td>
+                                    <td class="p-3 font-mono text-blue-600">Talla</td>
+                                    <td class="p-3 font-mono">hs06_0083</td>
+                                    <td class="p-3 font-mono">hs05_0096</td>
+                                    <td class="p-3">100.0 cm – 220.0 cm</td>
+                                    <td class="p-3"><span class="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-medium">Modelo Principal</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-semibold text-slate-800">Biométrica</td>
+                                    <td class="p-3 font-mono text-blue-600">Cintura</td>
+                                    <td class="p-3 text-slate-400 italic">No disponible (NA)</td>
+                                    <td class="p-3 font-mono">hs05_0097</td>
+                                    <td class="p-3">40.0 cm – 180.0 cm</td>
+                                    <td class="p-3"><span class="px-2 py-0.5 rounded bg-red-100 text-red-800 font-medium">Modelo 2023 (4D)</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-semibold text-slate-800">Hematológica</td>
+                                    <td class="p-3 font-mono text-blue-600">Hemoglobina</td>
+                                    <td class="p-3 font-mono">hs07_0097</td>
+                                    <td class="p-3 font-mono">hs06_0120</td>
+                                    <td class="p-3">4.0 g/dL – 25.0 g/dL</td>
+                                    <td class="p-3"><span class="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-medium">Modelo Principal</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-semibold text-slate-800">Contextual</td>
+                                    <td class="p-3 font-mono text-slate-700">Altitud</td>
+                                    <td class="p-3 font-mono">altura</td>
+                                    <td class="p-3 font-mono">altitud</td>
+                                    <td class="p-3">msnm (Continuo)</td>
+                                    <td class="p-3"><span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-medium">Piso Ecológico</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-semibold text-slate-800">Contextual</td>
+                                    <td class="p-3 font-mono text-slate-700">Area / Embarazo</td>
+                                    <td class="p-3 font-mono">area / hs07_0098</td>
+                                    <td class="p-3 font-mono">area / hs06_0121</td>
+                                    <td class="p-3">Etiquetas SPSS (haven)</td>
+                                    <td class="p-3"><span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-medium">Cruce Fisiológico</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- PIPELINE VISUAL PASO A PASO DE LA LIMPIEZA -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                    <h3 class="font-bold text-slate-900 text-sm mb-4">Pipeline de Procesamiento y Filtrado de Datos en R</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-3 relative">
+                        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
+                            <div class="text-xs font-bold text-blue-600">Paso 1: Lectura</div>
+                            <div class="text-xs font-semibold text-slate-800">Importación SAV</div>
+                            <p class="text-[11px] text-slate-500">Lectura de microdatos binarios de SPSS mediante <code class="text-blue-600">haven::read_sav()</code> preservando etiquetas.</p>
+                        </div>
+
+                        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
+                            <div class="text-xs font-bold text-blue-600">Paso 2: Conversión</div>
+                            <div class="text-xs font-semibold text-slate-800">Casteo Numérico</div>
+                            <p class="text-[11px] text-slate-500">Uso de <code class="text-blue-600">as.numeric()</code> para eliminar atributos de etiqueta SPSS y habilitar operaciones vectoriales.</p>
+                        </div>
+
+                        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
+                            <div class="text-xs font-bold text-blue-600">Paso 3: Filtro Rango</div>
+                            <div class="text-xs font-semibold text-slate-800">Descarte 99/999</div>
+                            <p class="text-[11px] text-slate-500">Remoción de códigos de no respuesta/omisión (99, 999, 9999) mediante límites biológicos estrictos.</p>
+                        </div>
+
+                        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
+                            <div class="text-xs font-bold text-blue-600">Paso 4: Deduplicar</div>
+                            <div class="text-xs font-semibold text-slate-800">Limpieza Registros</div>
+                            <p class="text-[11px] text-slate-500">Filtrado con <code class="text-blue-600">distinct()</code> para eliminar réplicas exactas producidas por captura duplicada.</p>
+                        </div>
+
+                        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
+                            <div class="text-xs font-bold text-blue-600">Paso 5: Escalamiento</div>
+                            <div class="text-xs font-semibold text-slate-800">Z-Score scale()</div>
+                            <p class="text-[11px] text-slate-500">Estandarización $(\mu=0, \sigma=1)$ imprescindible para balancear variables en GMM, LOF y Mahalanobis.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ANÁLISIS UNIVARIADO (TUKEY / BOXPLOT) -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-base">Análisis Univariado de Atípicos (Criterio de Tukey / Boxplot)</h3>
+                            <p class="text-xs text-slate-500">Cantidad de valores atípicos fuera de $1.5 \times IQR$ por variable</p>
+                        </div>
+                    </div>
+                    <div class="h-64 w-full">
+                        <canvas id="chartTukeyOutliers"></canvas>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- TAB 3: MODELOS Y COMPARATIVAS -->
+            <section id="tab-modelos" class="tab-content hidden space-y-6">
+                
+                <!-- CONTROL INTERACTIVO DE AÑO -->
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="sliders" class="w-5 h-5 text-blue-600"></i>
+                        <span class="text-sm font-bold text-slate-800">Vista de Modelado:</span>
+                    </div>
+                    <div class="inline-flex p-1 bg-slate-100 rounded-lg border border-slate-200" id="model-year-toggle">
+                        <button onclick="updateModelView('2016')" id="btn-m-2016" class="px-4 py-1.5 rounded-md text-xs font-semibold transition text-slate-600 hover:text-slate-900">EDSA 2016 (3D)</button>
+                        <button onclick="updateModelView('2023')" id="btn-m-2023" class="px-4 py-1.5 rounded-md text-xs font-semibold transition text-slate-600 hover:text-slate-900">EDSA 2023 (4D)</button>
+                        <button onclick="updateModelView('ambos')" id="btn-m-ambos" class="px-4 py-1.5 rounded-md text-xs font-semibold transition bg-blue-600 text-white shadow-sm">Ambos Años (Comparativo)</button>
+                    </div>
+                </div>
+
+                <!-- CARDS TÉCNICAS DE LOS 3 MODELOS MULTIVARIADOS -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- GMM -->
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                            <span class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span> GMM (mclust)
+                            </span>
+                            <span class="text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">G = 3 Componentes</span>
+                        </div>
+                        <div class="space-y-2 text-xs text-slate-600">
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Modelo 2016:</span>
+                                <span class="font-mono font-bold text-slate-800">VVE (Ellipsoidal)</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Modelo 2023:</span>
+                                <span class="font-mono font-bold text-slate-800">VVV (Unconstrained)</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">BIC 2016 / 2023:</span>
+                                <span class="font-mono font-semibold text-slate-700">-35,901 / -52,277</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Criterio Umbral:</span>
+                                <span class="font-semibold text-slate-800">Log-Densidad &lt; P5%</span>
+                            </div>
+                        </div>
+                        <div class="p-2.5 bg-slate-50 rounded-lg text-[11px] text-slate-600 border border-slate-200">
+                            <strong>GMM 2016:</strong> 216 anom. (5.01%)<br>
+                            <strong>GMM 2023:</strong> 268 anom. (5.01%)
+                        </div>
+                    </div>
+
+                    <!-- LOF -->
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                            <span class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> LOF (dbscan)
+                            </span>
+                            <span class="text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded">k = 20 Vecinos</span>
+                        </div>
+                        <div class="space-y-2 text-xs text-slate-600">
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Umbral de Corte:</span>
+                                <span class="font-mono font-bold text-slate-800">LOF Score &gt; 1.5</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Mediana Score:</span>
+                                <span class="font-mono text-slate-700">1.018 (16) | 1.030 (23)</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Score Máximo:</span>
+                                <span class="font-mono text-red-600 font-bold">6.306 (16) | 2.780 (23)</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Propiedad:</span>
+                                <span class="font-semibold text-slate-800">Densidad Relativa Local</span>
+                            </div>
+                        </div>
+                        <div class="p-2.5 bg-slate-50 rounded-lg text-[11px] text-slate-600 border border-slate-200">
+                            <strong>LOF 2016:</strong> 70 anom. (1.62%)<br>
+                            <strong>LOF 2023:</strong> 93 anom. (1.74%)
+                        </div>
+                    </div>
+
+                    <!-- MAHALANOBIS -->
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                            <span class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-purple-600"></span> Dist. Mahalanobis
+                            </span>
+                            <span class="text-[11px] font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded">Corte Chi² 95%</span>
+                        </div>
+                        <div class="space-y-2 text-xs text-slate-600">
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Grados Libertad:</span>
+                                <span class="font-mono font-bold text-slate-800">df=3 (16) | df=4 (23)</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Valor Crítico Chi²:</span>
+                                <span class="font-mono text-slate-700">7.81 (16) | 9.49 (23)</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Distancia Máx D²:</span>
+                                <span class="font-mono text-purple-600 font-bold">66.25 (16) | 64.47 (23)</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Propiedad:</span>
+                                <span class="font-semibold text-slate-800">Distancia Elipsoidal Global</span>
+                            </div>
+                        </div>
+                        <div class="p-2.5 bg-slate-50 rounded-lg text-[11px] text-slate-600 border border-slate-200">
+                            <strong>Mahal 2016:</strong> 235 anom. (5.45%)<br>
+                            <strong>Mahal 2023:</strong> 345 anom. (6.45%)
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GRÁFICO SENSIBILIDAD DE K EN LOF -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-base">Análisis de Sensibilidad de LOF según el Parámetro $k$ (Vecinos)</h3>
+                            <p class="text-xs text-slate-500">Porcentaje de anomalías detectadas con umbral LOF &gt; 1.5 en función de $k \in \{10, 15, 20, 30, 50\}$</p>
+                        </div>
+                        <span class="text-xs font-semibold px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full">Estabilización comprobada en k=20</span>
+                    </div>
+                    <div class="h-64 w-full">
+                        <canvas id="chartLOFSensitivity"></canvas>
+                    </div>
+                </div>
+
+                <!-- GRÁFICOS DE DISTRIBUCIÓN DE VOTOS Y CONCORDANCIA -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                        <h3 class="font-bold text-slate-900 text-sm">Distribución de Votos de Concordancia (0 a 3 Modelos)</h3>
+                        <p class="text-xs text-slate-500">Número de modelos simultáneos que clasifican un caso como anomalía</p>
+                        <div class="h-60 w-full">
+                            <canvas id="chartVotesDistribution"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                        <h3 class="font-bold text-slate-900 text-sm">Matriz de Intersección entre Modelos (Casos Compartidos)</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                                        <th class="p-2.5">Par de Modelos</th>
+                                        <th class="p-2.5 text-center">EDSA 2016</th>
+                                        <th class="p-2.5 text-center">EDSA 2023</th>
+                                        <th class="p-2.5 text-right">Interpretación</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-200 text-slate-600">
+                                    <tr>
+                                        <td class="p-2.5 font-semibold text-slate-800">GMM ∩ LOF</td>
+                                        <td class="p-2.5 text-center font-bold text-blue-600">65 casos</td>
+                                        <td class="p-2.5 text-center font-bold text-red-600">88 casos</td>
+                                        <td class="p-2.5 text-right">Anomalías locales y de clúster</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-2.5 font-semibold text-slate-800">GMM ∩ Mahalanobis</td>
+                                        <td class="p-2.5 text-center font-bold text-blue-600">181 casos</td>
+                                        <td class="p-2.5 text-center font-bold text-red-600">248 casos</td>
+                                        <td class="p-2.5 text-right">Alta concordancia elipsoidal</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-2.5 font-semibold text-slate-800">LOF ∩ Mahalanobis</td>
+                                        <td class="p-2.5 text-center font-bold text-blue-600">61 casos</td>
+                                        <td class="p-2.5 text-center font-bold text-red-600">82 casos</td>
+                                        <td class="p-2.5 text-right">Atípicos globales aislados</td>
+                                    </tr>
+                                    <tr class="bg-emerald-50 text-emerald-900 font-bold">
+                                        <td class="p-2.5">Consenso Tricomponente (3/3)</td>
+                                        <td class="p-2.5 text-center text-emerald-700">60 casos</td>
+                                        <td class="p-2.5 text-center text-emerald-700">82 casos</td>
+                                        <td class="p-2.5 text-right text-emerald-700">Anomalías Biométricas Severas</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PERFILES BIOMÉTRICOS PROMEDIO -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="font-bold text-slate-900 text-base mb-1">Perfil Biométrico Promedio: Población Normal vs Anomalías</h3>
+                    <p class="text-xs text-slate-500 mb-4">Evidencia de elevación del IMC y distorsión ponderal en los grupos clasificados</p>
+                    <div class="h-72 w-full">
+                        <canvas id="chartBiometricProfiles"></canvas>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- TAB 4: CRUCE CONTEXTUAL Y AUDITORÍA -->
+            <section id="tab-contexto" class="tab-content hidden space-y-6">
+                
+                <!-- PISO ECOLÓGICO / ALTITUD -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-base">Análisis por Piso Ecológico y Adaptación Fisiológica (Altitud)</h3>
+                            <p class="text-xs text-slate-500">Distribución en Llano (&lt;1500m), Valle (1500-3000m) y Altiplano (&gt;3000m)</p>
+                        </div>
+                    </div>
+                    <div class="h-64 w-full">
+                        <canvas id="chartAltitudePattern"></canvas>
+                    </div>
+                </div>
+
+                <!-- CRUCE CON EMBARAZO Y ÁREA URBANA/RURAL -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                        <h3 class="font-bold text-slate-900 text-sm">Impacto del Estado de Embarazo en la Tasa de Anomalías</h3>
+                        <p class="text-xs text-slate-500">Elevación severa de detecciones GMM y Mahalanobis por cambios gestacionales</p>
+                        <div class="h-60 w-full">
+                            <canvas id="chartPregnancyImpact"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                        <h3 class="font-bold text-slate-900 text-sm">Distribución por Área Geográfica (Urbana vs Rural)</h3>
+                        <p class="text-xs text-slate-500">Comparativa de prevalencia de anomalías y peso medio acumulado</p>
+                        <div class="h-60 w-full">
+                            <canvas id="chartAreaComparison"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TABLA INTERACTIVA DE AUDITORÍA TOP 5 CASOS EXTREMOS -->
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden space-y-4 p-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-base flex items-center gap-2">
+                                <i data-lucide="search-code" class="w-5 h-5 text-red-600"></i>
+                                Auditoría Individual: Top 5 Anomalías Más Severas (Consenso 3/3)
+                            </h3>
+                            <p class="text-xs text-slate-500">Registros biométricos reales auditados para diferenciamiento clínico vs error de medición</p>
+                        </div>
+                        <div class="inline-flex p-1 bg-slate-100 rounded-lg border border-slate-200">
+                            <button onclick="filterAuditYear('2016')" id="btn-a-2016" class="px-3 py-1 rounded text-xs font-semibold text-slate-600 hover:text-slate-900">Año 2016</button>
+                            <button onclick="filterAuditYear('2023')" id="btn-a-2023" class="px-3 py-1 rounded text-xs font-semibold text-slate-600 hover:text-slate-900">Año 2023</button>
+                            <button onclick="filterAuditYear('todos')" id="btn-a-todos" class="px-3 py-1 rounded text-xs font-semibold bg-slate-800 text-white">Top 10 Completo</button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                                    <th class="p-3">Año</th>
+                                    <th class="p-3">Peso (kg)</th>
+                                    <th class="p-3">Talla (cm)</th>
+                                    <th class="p-3">IMC (kg/m²)</th>
+                                    <th class="p-3">Hemoglobina</th>
+                                    <th class="p-3">Altitud</th>
+                                    <th class="p-3">LOF Score</th>
+                                    <th class="p-3">Mahalanobis D²</th>
+                                    <th class="p-3">Diagnóstico / Evaluación Auditoría</th>
+                                </tr>
+                            </thead>
+                            <tbody id="audit-table-body" class="divide-y divide-slate-200 text-slate-700">
+                                <!-- Filas inyectadas por JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- TAB 5: BITÁCORA TÉCNICA (SCRIPTS R) -->
+            <section id="tab-bitacora" class="tab-content hidden space-y-6">
+                
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                        <div>
+                            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                                <i data-lucide="file-code-2" class="w-5 h-5 text-blue-600"></i>
+                                Bitácora Técnica de Scripts R del Proyecto
+                            </h2>
+                            <p class="text-xs text-slate-500">Registro completo de los 8 scripts ejecutados en la arquitectura R</p>
+                        </div>
+                        <input type="text" id="script-search" oninput="filterScripts()" placeholder="Buscar script, paquete o función..." class="px-3 py-1.5 border border-slate-300 rounded-lg text-xs w-64 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div id="scripts-container" class="space-y-4">
+                        <!-- Scripts cargados dinámicamente -->
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- TAB 6: LÍNEA DE TIEMPO DEL PROYECTO -->
+            <section id="tab-timeline" class="tab-content hidden space-y-6">
+                
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
+                    <div class="border-b border-slate-100 pb-4">
+                        <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                            <i data-lucide="history" class="w-5 h-5 text-blue-600"></i>
+                            Línea de Tiempo de Estructuración y Desarrollo del Proyecto
+                        </h2>
+                        <p class="text-xs text-slate-500">Secuencia cronológica del trabajo metodológico realizado el 22/11/2026</p>
+                    </div>
+
+                    <div class="relative pl-6 sm:pl-8 border-l-2 border-slate-200 space-y-8">
+                        
+                        <!-- ETAPA 1 -->
+                        <div class="relative group">
+                            <div class="absolute -left-[31px] sm:-left-[39px] top-0.5 w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold ring-4 ring-white">
+                                1
+                            </div>
+                            <div class="space-y-1">
+                                <span class="text-[11px] font-semibold text-blue-600 uppercase tracking-wider">Fase 1 • Fundamentación Teórica</span>
+                                <h4 class="font-bold text-slate-900 text-sm">Revisión Bibliográfica y Selección de Fuentes Bolivianas</h4>
+                                <p class="text-xs text-slate-600 leading-relaxed">
+                                    Revisión de los apuntes teóricos (<code class="bg-slate-100 text-slate-800 px-1 py-0.5 rounded">cap DM_6A</code>, <code class="bg-slate-100 text-slate-800 px-1 py-0.5 rounded">6B</code>, <code class="bg-slate-100 text-slate-800 px-1 py-0.5 rounded">6C</code>) sobre Outliers, Criterio de Tukey, GMM y LOF. Selección del Catálogo ANDA del INE Bolivia (Encuesta Demográfica y de Salud Ambiental EDSA).
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- ETAPA 2 -->
+                        <div class="relative group">
+                            <div class="absolute -left-[31px] sm:-left-[39px] top-0.5 w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold ring-4 ring-white">
+                                2
+                            </div>
+                            <div class="space-y-1">
+                                <span class="text-[11px] font-semibold text-blue-600 uppercase tracking-wider">Fase 2 • Auditoría de Microdatos</span>
+                                <h4 class="font-bold text-slate-900 text-sm">Descarte de Módulos Categóricos e Identificación de Variables Biométricas</h4>
+                                <p class="text-xs text-slate-600 leading-relaxed">
+                                    Auditoría de los archivos SPSS. Descarte de Vivienda, Hogar y Cuestionario de la Mujer por contener atributos cualitativos auto-reportados. Selección estricta de los archivos de medidas directas <code class="bg-slate-100 text-slate-800 px-1 py-0.5 rounded">Peso_talla_hemo</code>.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- ETAPA 3 -->
+                        <div class="relative group">
+                            <div class="absolute -left-[31px] sm:-left-[39px] top-0.5 w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold ring-4 ring-white">
+                                3
+                            </div>
+                            <div class="space-y-1">
+                                <span class="text-[11px] font-semibold text-blue-600 uppercase tracking-wider">Fase 3 • Limpieza EDSA 2023</span>
+                                <h4 class="font-bold text-slate-900 text-sm">Ingeniería de Datos y Filtrado Biológico 2023 (n = 5,349)</h4>
+                                <p class="text-xs text-slate-600 leading-relaxed">
+                                    Desarrollo de <code class="text-blue-600 font-mono">Limpieza_EDSA2023.R</code>. Filtrado de códigos administrativos (99/999), remoción de valores faltantes y estandarización Z-score de Peso, Talla, Cintura y Hemoglobina.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- ETAPA 4 -->
+                        <div class="relative group">
+                            <div class="absolute -left-[31px] sm:-left-[39px] top-0.5 w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold ring-4 ring-white">
+                                4
+                            </div>
+                            <div class="space-y-1">
+                                <span class="text-[11px] font-semibold text-blue-600 uppercase tracking-wider">Fase 4 • Modelado Base 2023</span>
+                                <h4 class="font-bold text-slate-900 text-sm">Implementación de GMM (VVV) y LOF (k=20) en EDSA 2023</h4>
+                                <p class="text-xs text-slate-600 leading-relaxed">
+                                    Ejecución de <code class="text-blue-600 font-mono">GMM_LOF_EDSA2023.R</code> y <code class="text-blue-600 font-mono">Boxplot_graficos_EDSA2023.R</code>. Identificación de 268 anomalías GMM y 93 anomalías LOF con sus correspondientes visualizaciones.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- ETAPA 5 -->
+                        <div class="relative group">
+                            <div class="absolute -left-[31px] sm:-left-[39px] top-0.5 w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold ring-4 ring-white">
+                                5
+                            </div>
+                            <div class="space-y-1">
+                                <span class="text-[11px] font-semibold text-blue-600 uppercase tracking-wider">Fase 5 • Replicación Longitudinal 2016</span>
+                                <h4 class="font-bold text-slate-900 text-sm">Limpieza y Modelado EDSA 2016 (n = 4,309)</h4>
+                                <p class="text-xs text-slate-600 leading-relaxed">
+                                    Desarrollo y ejecución de <code class="text-blue-600 font-mono">Limpieza_EDSA2016.R</code>, <code class="text-blue-600 font-mono">GMM_LOF_EDSA2016.R</code> y <code class="text-blue-600 font-mono">Boxplot_graficos_EDSA2016.R</code>. Selección del modelo GMM óptimo (VVE) con 216 anomalías y 70 en LOF.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- ETAPA 6 -->
+                        <div class="relative group">
+                            <div class="absolute -left-[31px] sm:-left-[39px] top-0.5 w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold ring-4 ring-white">
+                                6
+                            </div>
+                            <div class="space-y-1">
+                                <span class="text-[11px] font-semibold text-blue-600 uppercase tracking-wider">Fase 6 • Ampliación Metodológica</span>
+                                <h4 class="font-bold text-slate-900 text-sm">Distancia de Mahalanobis, Consenso Tricomponente y Cruce Contextual</h4>
+                                <p class="text-xs text-slate-600 leading-relaxed">
+                                    Ejecución de <code class="text-blue-600 font-mono">Mahalanobis_cruce_contextual.R</code>. Definición del sistema de votación (0 a 3 votos), cálculo de umbrales Chi-cuadrado y cruces con Altitud (Piso Ecológico), Área y Estado de Embarazo.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- ETAPA 7 -->
+                        <div class="relative group">
+                            <div class="absolute -left-[31px] sm:-left-[39px] top-0.5 w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold ring-4 ring-white">
+                                7
+                            </div>
+                            <div class="space-y-1">
+                                <span class="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider">Fase 7 • Validación y Cierre</span>
+                                <h4 class="font-bold text-slate-900 text-sm">Análisis de Sensibilidad LOF, Auditoría Top 5 y Consolidación</h4>
+                                <p class="text-xs text-slate-600 leading-relaxed">
+                                    Ejecución de <code class="text-blue-600 font-mono">analisis_graficos.R</code>. Evaluación de sensibilidad $k \in \{10..50\}$, auditoría clínica individual de casos severos y despliegue del Dashboard Ejecutivo e Informe Final PDF.
+                                </p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </section>
+
+        </main>
+    </div>
+
+    <!-- PIE DE PÁGINA ACADÉMICO -->
+    <footer class="bg-white border-t border-slate-200 py-4 mt-8 no-print">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500">
+            Proyecto Final DAT-253 • Minería de Datos • Docente: Lic. Menfy Morales Rios • Universidad Mayor de San Andrés (UMSA)
+        </div>
+    </footer>
+
+    <!-- LÓGICA JAVASCRIPT CON CHART.JS Y GESTIÓN DE PESTAÑAS -->
+    <script>
+        // Inicializar Lucide Icons
+        lucide.createIcons();
+
+        // DATOS MAESTROS DEL PROYECTO
+        const auditData = [
+            // EDSA 2016 Top 5
+            { anio: "2016", peso: 52.0, talla: 105.0, imc: 47.17, hemo: 13.5, altitud: 261, lof: 6.31, mahal: 66.2, diag: "Posible error de medición / Talla extrema", tagClass: "bg-red-100 text-red-800" },
+            { anio: "2016", peso: 51.1, talla: 111.0, imc: 41.47, hemo: 11.1, altitud: 4028, lof: 5.55, mahal: 53.5, diag: "Talla baja extrema / Obesidad relativa", tagClass: "bg-amber-100 text-amber-800" },
+            { anio: "2016", peso: 32.0, talla: 120.0, imc: 22.22, hemo: 17.9, altitud: 3618, lof: 4.88, mahal: 33.9, diag: "Adaptación a la altura / Poliglobulia fisiológica", tagClass: "bg-blue-100 text-blue-800" },
+            { anio: "2016", peso: 58.2, talla: 185.0, imc: 17.00, hemo: 11.5, altitud: 259, lof: 2.93, mahal: 33.0, diag: "Talla alta / Bajo peso severo", tagClass: "bg-purple-100 text-purple-800" },
+            { anio: "2016", peso: 70.0, talla: 137.0, imc: 37.30, hemo: 19.9, altitud: 4028, lof: 2.79, mahal: 18.4, diag: "Obesidad + Adaptación Altiplano", tagClass: "bg-amber-100 text-amber-800" },
+            
+            // EDSA 2023 Top 5
+            { anio: "2023", peso: 56.0, talla: 118.0, imc: 39.94, hemo: 11.9, altitud: 2507, lof: 2.78, mahal: 34.9, diag: "Talla baja extrema / Auditoría", tagClass: "bg-red-100 text-red-800" },
+            { anio: "2023", peso: 169.0, talla: 154.0, imc: 71.26, hemo: 12.8, altitud: 1872, lof: 2.49, mahal: 64.4, diag: "Obesidad mórbida extrema (IMC > 70)", tagClass: "bg-red-100 text-red-800" },
+            { anio: "2023", peso: 52.0, talla: 148.0, imc: 23.74, hemo: 18.3, altitud: 4008, lof: 2.25, mahal: 27.2, diag: "Adaptación a la altura / Altiplano", tagClass: "bg-blue-100 text-blue-800" },
+            { anio: "2023", peso: 75.7, talla: 146.0, imc: 35.51, hemo: 22.1, altitud: 3656, lof: 2.21, mahal: 26.4, diag: "Poliglobulia severa en Altiplano", tagClass: "bg-blue-100 text-blue-800" },
+            { anio: "2023", peso: 50.0, talla: 118.0, imc: 35.92, hemo: 12.2, altitud: 355, lof: 2.19, mahal: 39.9, diag: "Talla baja extrema / Llano", tagClass: "bg-amber-100 text-amber-800" }
+        ];
+
+        const scriptsData = [
+            { nombre: "Limpieza_EDSA2016.R", fase: "Fase 1: Preprocesamiento 2016", paquetes: "haven, dplyr", entrada: "EDSA16_PESO_TALLA_HEMOGLOBINA.sav", decision: "Filtro de rangos biológicos: Peso [20-200], Talla [100-220], Hemoglobina [4-25]. Remoción de duplicados y Z-score.", salida: "datos_limpios_2016.rds, X_scaled_2016.rds" },
+            { nombre: "GMM_LOF_EDSA2016.R", fase: "Fase 2: Modelado 2016", paquetes: "mclust, dbscan, dplyr", entrada: "datos_limpios_2016.rds, X_scaled_2016.rds", decision: "GMM con G=3 (Modelo óptimo VVE). LOF con k=20 y umbral >1.5. Percentil 5% en log-densidad GMM.", salida: "datos_resultados_2016.rds, gmm_info_2016.rds" },
+            { nombre: "Boxplot_graficos_EDSA2016.R", fase: "Fase 3: Visualización 2016", paquetes: "ggplot2", entrada: "datos_resultados_2016.rds", decision: "Generación de boxplots univariados (Tukey) y 4 dispersiones ggplot2 para Peso vs Talla y Hemoglobina.", salida: "5 gráficos .png (graficos_proyecto_2016/)" },
+            { nombre: "Limpieza_EDSA2023.R", fase: "Fase 1: Preprocesamiento 2023", paquetes: "haven, dplyr", entrada: "EDSA2023_Peso_talla_hemo.sav", decision: "Incorporación de Cintura. Filtro biológico en 4D y estandarización Z-score de 5,349 registros válidos.", salida: "datos_limpios.rds, X_scaled.rds" },
+            { nombre: "GMM_LOF_EDSA2023.R", fase: "Fase 2: Modelado 2023", paquetes: "mclust, dbscan, dplyr", entrada: "datos_limpios.rds, X_scaled.rds", decision: "GMM con G=3 (Modelo óptimo VVV). LOF con k=20. Tabla cruzada de concordancia y perfiles de medias.", salida: "datos_resultados.rds, gmm_info.rds" },
+            { nombre: "Boxplot_graficos_EDSA2023.R", fase: "Fase 3: Visualización 2023", paquetes: "ggplot2", entrada: "datos_resultados.rds", decision: "Construcción de 5 gráficos PNG comparativos de anomalías GMM y LOF en el espacio 4D.", salida: "5 gráficos .png (graficos_proyecto/)" },
+            { nombre: "Mahalanobis_cruce_contextual.R", fase: "Fase 4: Ampliación Contextual", paquetes: "haven, dplyr, ggplot2", entrada: "Resultados RDS + Archivos SAV originales", decision: "Cálculo de Distancia de Mahalanobis D² con umbral Chi-cuadrado 95%. Sistema de votación tricomponente (0 a 3). Cruce con Altitud, Área y Embarazo.", salida: "datos_finales_2016.rds, datos_finales_2023.rds" },
+            { nombre: "analisis_graficos.R", fase: "Fase 5: Sensibilidad & Comparación", paquetes: "dplyr, ggplot2, dbscan, mclust", entrada: "datos_finales_2016.rds, datos_finales_2023.rds", decision: "Prueba de sensibilidad LOF k ∈ {10,15,20,30,50}. Perfil de IMC en Consenso 3/3, auditoría Top 5 y densidad poblacional.", salida: "5 gráficos comparativos .png (graficos_comparativos/)" }
+        ];
+
+        // RENDERIZAR TABLA DE AUDITORÍA
+        function renderAuditTable(year) {
+            const tbody = document.getElementById('audit-table-body');
+            tbody.innerHTML = '';
+            
+            const filtered = year === 'todos' 
+                ? auditData 
+                : auditData.filter(d => d.anio === year);
+
+            filtered.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50 transition';
+                tr.innerHTML = `
+                    <td class="p-3 font-bold ${item.anio === '2016' ? 'text-blue-600' : 'text-red-600'}">${item.anio}</td>
+                    <td class="p-3 font-medium">${item.peso.toFixed(1)}</td>
+                    <td class="p-3">${item.talla.toFixed(1)}</td>
+                    <td class="p-3 font-bold text-slate-900">${item.imc.toFixed(1)}</td>
+                    <td class="p-3">${item.hemo.toFixed(1)} g/dL</td>
+                    <td class="p-3">${item.altitud} m</td>
+                    <td class="p-3 font-mono font-semibold text-amber-700">${item.lof.toFixed(2)}</td>
+                    <td class="p-3 font-mono font-semibold text-purple-700">${item.mahal.toFixed(1)}</td>
+                    <td class="p-3"><span class="px-2 py-1 rounded-full text-[11px] font-semibold ${item.tagClass}">${item.diag}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('btn-a-2016').className = year === '2016' ? 'px-3 py-1 rounded text-xs font-semibold bg-blue-600 text-white' : 'px-3 py-1 rounded text-xs font-semibold text-slate-600 hover:text-slate-900';
+            document.getElementById('btn-a-2023').className = year === '2023' ? 'px-3 py-1 rounded text-xs font-semibold bg-red-600 text-white' : 'px-3 py-1 rounded text-xs font-semibold text-slate-600 hover:text-slate-900';
+            document.getElementById('btn-a-todos').className = year === 'todos' ? 'px-3 py-1 rounded text-xs font-semibold bg-slate-800 text-white' : 'px-3 py-1 rounded text-xs font-semibold text-slate-600 hover:text-slate-900';
+        }
+
+        // RENDERIZAR SCRIPTS BITÁCORA
+        function renderScripts(items) {
+            const container = document.getElementById('scripts-container');
+            container.innerHTML = '';
+            
+            items.forEach(s => {
+                const card = document.createElement('div');
+                card.className = 'bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 hover:border-slate-300 transition';
+                card.innerHTML = `
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-slate-200 pb-2">
+                        <span class="font-mono font-bold text-slate-900 text-xs flex items-center gap-2">
+                            <i data-lucide="file-code" class="w-4 h-4 text-blue-600"></i> ${s.nombre}
+                        </span>
+                        <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-blue-100 text-blue-800">${s.fase}</span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-slate-600 pt-1">
+                        <div>
+                            <span class="font-semibold text-slate-700">Paquetes R:</span> <code class="text-indigo-600">${s.paquetes}</code><br>
+                            <span class="font-semibold text-slate-700">Archivos Entrada:</span> <span class="font-mono text-slate-500">${s.entrada}</span>
+                        </div>
+                        <div>
+                            <span class="font-semibold text-slate-700">Artefactos Salida:</span> <span class="font-mono text-slate-500">${s.salida}</span>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-600 bg-white p-2.5 rounded border border-slate-200 mt-2">
+                        <strong>Decisión Técnica:</strong> ${s.decision}
+                    </p>
+                `;
+                container.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        function filterScripts() {
+            const query = document.getElementById('script-search').value.toLowerCase();
+            const filtered = scriptsData.filter(s => 
+                s.nombre.toLowerCase().includes(query) || 
+                s.paquetes.toLowerCase().includes(query) ||
+                s.fase.toLowerCase().includes(query) ||
+                s.decision.toLowerCase().includes(query)
+            );
+            renderScripts(filtered);
+        }
+
+        // GESTIÓN DE PESTAÑAS
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = 'tab-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition';
+            });
+
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`nav-${tabId}`);
+            if (activeBtn) {
+                activeBtn.className = 'tab-btn active w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-lg text-xs font-semibold transition bg-blue-50 text-blue-700 border border-blue-200';
+            }
+
+            // Redimensionar gráficos para evitar problemas de canvas ocultos
+            setTimeout(() => {
+                window.dispatchEvent(new Event('resize'));
+            }, 50);
+        }
+
+        // INICIALIZACIÓN DE GRÁFICOS CHART.JS
+        let chartOverview, chartTukey, chartSensitivity, chartVotes, chartProfiles, chartAltitude, chartPregnancy, chartArea;
+
+        function initCharts() {
+            // 1. Chart Resumen General
+            const ctxOverview = document.getElementById('chartComparisonOverview').getContext('2d');
+            chartOverview = new Chart(ctxOverview, {
+                type: 'bar',
+                data: {
+                    labels: ['Modelo GMM', 'Algoritmo LOF', 'Dist. Mahalanobis', 'Consenso (3/3)'],
+                    datasets: [
+                        {
+                            label: 'EDSA 2016 (%)',
+                            data: [5.01, 1.62, 5.45, 1.39],
+                            backgroundColor: '#2563EB',
+                            borderRadius: 6
+                        },
+                        {
+                            label: 'EDSA 2023 (%)',
+                            data: [5.01, 1.74, 6.45, 1.53],
+                            backgroundColor: '#DC2626',
+                            borderRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } },
+                    scales: { y: { beginAtZero: true, ticks: { callback: v => v + '%' } } }
+                }
+            });
+
+            // 2. Chart Tukey Outliers
+            const ctxTukey = document.getElementById('chartTukeyOutliers').getContext('2d');
+            chartTukey = new Chart(ctxTukey, {
+                type: 'bar',
+                data: {
+                    labels: ['Peso', 'Talla', 'Cintura', 'Hemoglobina'],
+                    datasets: [
+                        { label: 'Outliers 2016', data: [94, 52, 0, 48], backgroundColor: '#93C5FD', borderRadius: 4 },
+                        { label: 'Outliers 2023', data: [100, 61, 43, 80], backgroundColor: '#FCA5A5', borderRadius: 4 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } }
+                }
+            });
+
+            // 3. Chart Sensibilidad LOF
+            const ctxSens = document.getElementById('chartLOFSensitivity').getContext('2d');
+            chartSensitivity = new Chart(ctxSens, {
+                type: 'line',
+                data: {
+                    labels: ['k=10', 'k=15', 'k=20', 'k=30', 'k=50'],
+                    datasets: [
+                        { label: 'EDSA 2016 (%)', data: [1.18, 1.46, 1.62, 1.67, 1.88], borderColor: '#2563EB', backgroundColor: '#2563EB', tension: 0.3, pointRadius: 5 },
+                        { label: 'EDSA 2023 (%)', data: [1.57, 1.68, 1.74, 1.70, 1.78], borderColor: '#DC2626', backgroundColor: '#DC2626', tension: 0.3, pointRadius: 5 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, ticks: { callback: v => v + '%' } } }
+                }
+            });
+
+            // 4. Chart Votos Distribucion
+            const ctxVotes = document.getElementById('chartVotesDistribution').getContext('2d');
+            chartVotes = new Chart(ctxVotes, {
+                type: 'bar',
+                data: {
+                    labels: ['0 Modelos (Normal)', '1 Modelo', '2 Modelos', '3 Modelos (Consenso)'],
+                    datasets: [
+                        { label: 'EDSA 2016', data: [4035, 87, 127, 60], backgroundColor: '#3B82F6', borderRadius: 4 },
+                        { label: 'EDSA 2023', data: [4979, 116, 172, 82], backgroundColor: '#EF4444', borderRadius: 4 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { type: 'logarithmic' } }
+                }
+            });
+
+            // 5. Chart Perfiles Biometricos
+            const ctxProf = document.getElementById('chartBiometricProfiles').getContext('2d');
+            chartProfiles = new Chart(ctxProf, {
+                type: 'radar',
+                data: {
+                    labels: ['Peso (kg)', 'Talla (cm-100)', 'Hemoglobina (x5)', 'IMC (kg/m²)'],
+                    datasets: [
+                        { label: 'Normal 2023', data: [63.8, 54.1, 65.0, 26.8], borderColor: '#94A3B8', backgroundColor: 'rgba(148,163,184,0.2)' },
+                        { label: 'GMM Anomalía 2023', data: [73.1, 50.4, 73.0, 32.3], borderColor: '#2563EB', backgroundColor: 'rgba(37,99,235,0.2)' },
+                        { label: 'LOF Anomalía 2023', data: [70.4, 48.6, 70.5, 31.9], borderColor: '#F59E0B', backgroundColor: 'rgba(245,158,11,0.2)' },
+                        { label: 'Consenso 3/3 2023', data: [71.9, 51.6, 75.5, 31.3], borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.2)' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+
+            // 6. Chart Piso Ecologico (Altitud)
+            const ctxAlt = document.getElementById('chartAltitudePattern').getContext('2d');
+            chartAltitude = new Chart(ctxAlt, {
+                type: 'bar',
+                data: {
+                    labels: ['Llano (<1500m)', 'Valle (1500-3000m)', 'Altiplano (>3000m)'],
+                    datasets: [
+                        { label: 'GMM 2016 (%)', data: [5.79, 2.76, 5.83], backgroundColor: '#60A5FA' },
+                        { label: 'GMM 2023 (%)', data: [5.74, 3.07, 5.44], backgroundColor: '#F87171' },
+                        { label: 'Hemo 2016 (g/dL)', data: [12.5, 14.1, 15.0], type: 'line', borderColor: '#1D4ED8', yAxisID: 'y1' },
+                        { label: 'Hemo 2023 (g/dL)', data: [12.0, 13.1, 14.3], type: 'line', borderColor: '#B91C1C', yAxisID: 'y1' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: 'Tasa Anomalía (%)' } },
+                        y1: { position: 'right', min: 10, max: 18, title: { display: true, text: 'Hemoglobina (g/dL)' }, grid: { drawOnChartArea: false } }
+                    }
+                }
+            });
+
+            // 7. Chart Embarazo Impact
+            const ctxPreg = document.getElementById('chartPregnancyImpact').getContext('2d');
+            chartPregnancy = new Chart(ctxPreg, {
+                type: 'bar',
+                data: {
+                    labels: ['No Embarazada', 'Embarazada'],
+                    datasets: [
+                        { label: 'GMM 2016 (%)', data: [4.87, 7.29], backgroundColor: '#93C5FD' },
+                        { label: 'GMM 2023 (%)', data: [4.84, 11.43], backgroundColor: '#EF4444' },
+                        { label: 'Mahalanobis 2023 (%)', data: [6.16, 17.10], backgroundColor: '#8B5CF6' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, ticks: { callback: v => v + '%' } } }
+                }
+            });
+
+            // 8. Chart Area Comparativa
+            const ctxArea = document.getElementById('chartAreaComparison').getContext('2d');
+            chartArea = new Chart(ctxArea, {
+                type: 'bar',
+                data: {
+                    labels: ['Urbana 2016', 'Rural 2016', 'Urbana 2023', 'Rural 2023'],
+                    datasets: [
+                        { label: 'Tasa GMM (%)', data: [5.42, 4.33, 5.64, 3.42], backgroundColor: '#3B82F6' },
+                        { label: 'Tasa Mahalanobis (%)', data: [5.79, 4.89, 7.18, 4.61], backgroundColor: '#8B5CF6' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, ticks: { callback: v => v + '%' } } }
+                }
+            });
+        }
+
+        // CONTROL DE VISTA INTERACTIVA DE MODELOS
+        function updateModelView(view) {
+            document.getElementById('btn-m-2016').className = view === '2016' ? 'px-4 py-1.5 rounded-md text-xs font-semibold bg-blue-600 text-white shadow-sm' : 'px-4 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900';
+            document.getElementById('btn-m-2023').className = view === '2023' ? 'px-4 py-1.5 rounded-md text-xs font-semibold bg-red-600 text-white shadow-sm' : 'px-4 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900';
+            document.getElementById('btn-m-ambos').className = view === 'ambos' ? 'px-4 py-1.5 rounded-md text-xs font-semibold bg-slate-800 text-white shadow-sm' : 'px-4 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900';
+        }
+
+        // INICIALIZACIÓN GENERAL AL CARGAR
+        window.addEventListener('load', () => {
+            initCharts();
+            renderAuditTable('todos');
+            renderScripts(scriptsData);
+        });
+
+        // MENÚ MÓVIL TOGGLE
+        document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('hidden');
+        });
+    </script>
+</body>
+</html>
